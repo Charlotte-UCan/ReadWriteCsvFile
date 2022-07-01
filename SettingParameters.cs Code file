@@ -1,0 +1,280 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using CsvHelper;
+using CsvHelper.Configuration;
+using CsvHelper.Configuration.Attributes;
+
+
+
+namespace DataDisplay
+{
+    public partial class SettingParameters : Form
+    {
+        string csv_path = @"D:/ガスタービン/GasTurbineDroneSystem/EXE/Limited Value.csv";
+
+        public SettingParameters()
+        {
+            InitializeComponent();
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show("Are you sure want to leave? ", "Message", MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
+            if (result == System.Windows.Forms.DialogResult.OK)
+            {
+                this.Close();
+            }            
+        }
+
+        /// <summary>
+        /// 入力データチェック
+        /// </summary>
+        private bool checkInputData()
+        {
+            TextBox[] txtbox_L =  new TextBox[]
+            {
+                txt_T2_Low,
+                txt_P0_Low,
+                txt_T5_Low,
+                txt_WF_Low,
+                txt_Poil_Low,
+                txt_C_Gen_Low,
+                txt_C_Inv_Low,
+                txt_N_Low,
+                txt_Com_WF_Low
+            };
+
+            TextBox[] txtbox_H =  new TextBox[]
+            {
+                txt_T2_High,
+                txt_P0_High,
+                txt_T5_High,
+                txt_WF_High,
+                txt_Poil_High,
+                txt_C_Gen_High,
+                txt_C_Inv_High,
+                txt_N_High,
+                txt_Com_WF_High
+            };
+            
+            bool bret = true;
+
+            for (int i = 0; i < txtbox_L.Length; i++)
+            {
+                try
+                {
+                    //下限値と上限値が逆
+                    if (double.Parse(txtbox_L[i].Text.ToString()) >= double.Parse(txtbox_H[i].Text.ToString()))
+                    {
+                        txtbox_L[i].BackColor = Color.Red;
+                        txtbox_H[i].BackColor = Color.Red;
+                        bret = false;
+                    }
+                    else
+                    {
+                        txtbox_L[i].BackColor = Color.White;
+                        txtbox_H[i].BackColor = Color.White;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    txtbox_L[i].BackColor = Color.Red;
+                    txtbox_H[i].BackColor = Color.Red;
+                    bret = false;
+                }
+            }
+
+            
+            return bret;
+        }
+
+        private bool checkValidateBtnAB() 
+        {
+            bool bret = true;
+
+            TextBox[] txtbox_AB = new TextBox[]
+            {
+                txt_T2_A, txt_P0_A, txt_T5_A, txt_WF_A, txt_Poil_A, txt_C_Gen_A, txt_C_Inv_A, txt_N_A, txt_Com_WF_A, txt_T2_B, txt_P0_B,
+                txt_T5_B, txt_WF_B, txt_Poil_B, txt_C_Gen_B, txt_C_Inv_B, txt_N_B, txt_Com_WF_B, txt_P_Value, txt_T_Value
+            };
+
+            double distance = 0;
+            for (int i = 0; i < txtbox_AB.Length; i++)
+            {
+                try
+                {
+                    if (!double.TryParse(txtbox_AB[i].Text, out distance))
+                    {
+                        //数値以外はエラー
+                        txtbox_AB[i].BackColor = Color.Red;
+                        bret = false;
+                    }
+                    else
+                    {
+                        txtbox_AB[i].BackColor = Color.White;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    txtbox_AB[i].BackColor = Color.Red;
+                }
+            }
+            return bret;
+        }
+
+        private void btn_setting_Click(object sender, EventArgs e)
+        {
+            //入力データ確認処理（下限と上限が逆、空白はNG）
+            bool bret = checkInputData();
+            if (!bret)
+            {
+                //エラーメッセージ
+                MessageBox.Show("入力値に異常があります。");
+                return;
+            }
+
+            bool ab_bret = checkValidateBtnAB();
+            if (!ab_bret)
+            {
+                //エラーメッセージ
+                MessageBox.Show("入力値に異常があります。");
+                return;
+            }
+
+            //CSVファイル保存処理
+            StreamWriter sw = new StreamWriter(csv_path);
+            {
+                sw.WriteLine("Parameter" + "," + "Low" + "," + "High" + "," + "A" + "," + "B");
+                sw.WriteLine(lbl_t2.Text + "," + txt_T2_Low.Text + "," + txt_T2_High.Text + "," + txt_T2_A.Text + "," + txt_T2_B.Text);
+                sw.WriteLine(lbl_p0.Text + "," + txt_P0_Low.Text + "," + txt_P0_High.Text + "," + txt_P0_A.Text + "," + txt_P0_B.Text);
+                sw.WriteLine(lbl_t5.Text + "," + txt_T5_Low.Text + "," + txt_T5_High.Text + "," + txt_T5_A.Text + "," + txt_T5_B.Text);
+                sw.WriteLine(lbl_wf.Text + "," + txt_WF_Low.Text + "," + txt_WF_High.Text + "," + txt_WF_A.Text + "," + txt_WF_B.Text);
+                sw.WriteLine(lbl_poil.Text + "," + txt_Poil_Low.Text + "," + txt_Poil_High.Text + "," + txt_Poil_A.Text + "," + txt_Poil_B.Text);
+                sw.WriteLine(lbl_c_gen.Text + "," + txt_C_Gen_Low.Text + "," + txt_C_Gen_High.Text + "," + txt_C_Gen_A.Text +"," + txt_C_Gen_B.Text);
+                sw.WriteLine(lbl_c_inv.Text + "," + txt_C_Inv_Low.Text + "," + txt_C_Inv_High.Text + "," + txt_C_Inv_A.Text + "," + txt_C_Inv_B.Text);
+                sw.WriteLine(lbl_n.Text + "," + txt_N_Low.Text + "," + txt_N_High.Text + "," + txt_N_A.Text + "," + txt_N_B.Text);
+                sw.WriteLine(lbl_com_wf.Text + "," + txt_Com_WF_Low.Text + "," + txt_Com_WF_High.Text + "," + txt_Com_WF_A.Text + "," + txt_Com_WF_B.Text);
+                sw.WriteLine(lbl_p.Text + "," + txt_P_Value.Text);
+                sw.WriteLine(lbl_t.Text + "," + txt_T_Value.Text);
+          
+                DialogResult result = MessageBox.Show("You have been successfully saved. ", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (result == System.Windows.Forms.DialogResult.OK)
+                {
+                    this.Close();
+                }
+
+                sw.Close();
+            }
+        }
+
+        private async void SettingParameters_Load(object sender, EventArgs e)
+        {
+            if (File.Exists(csv_path))
+            {
+                
+                StreamReader sr = new StreamReader(csv_path);
+               
+                //タイトル行スキップ
+                string data = sr.ReadLine();
+                string[] data_value = data.Split(',');
+
+                data = sr.ReadLine();                
+                data_value = data.Split(',');                
+                //List<string> lists = new List<string>();
+                txt_T2_Low.Text =data_value[1];
+                txt_T2_High.Text = data_value[2];
+                txt_T2_A.Text = data_value[3];
+                txt_T2_B.Text = data_value[4];
+
+                data = sr.ReadLine();
+                data_value = data.Split(',');
+                //lists = new List<string>();
+                txt_P0_Low.Text = data_value[1];
+                txt_P0_High.Text = data_value[2];
+                txt_P0_A.Text = data_value[3];
+                txt_P0_B.Text = data_value[4];
+
+                data = sr.ReadLine();
+                data_value = data.Split(',');
+                // lists = new List<string>();
+                txt_T5_Low.Text = data_value[1];
+                txt_T5_High.Text = data_value[2];
+                txt_T5_A.Text = data_value[3];
+                txt_T5_B.Text = data_value[4];
+
+                data = sr.ReadLine();
+                data_value = data.Split(',');
+                //lists = new List<string>();
+                txt_WF_Low.Text = data_value[1];
+                txt_WF_High.Text = data_value[2];
+                txt_WF_A.Text = data_value[3];
+                txt_WF_B.Text = data_value[4];
+
+                data = sr.ReadLine();
+                data_value = data.Split(',');
+                //lists = new List<string>();
+                txt_Poil_Low.Text = data_value[1];
+                txt_Poil_High.Text = data_value[2];
+                txt_Poil_A.Text = data_value[3];
+                txt_Poil_B.Text = data_value[4];
+
+                data = sr.ReadLine();
+                data_value = data.Split(',');
+                //lists = new List<string>();
+                txt_C_Gen_Low.Text = data_value[1];
+                txt_C_Gen_High.Text = data_value[2];
+                txt_C_Gen_A.Text = data_value[3];
+                txt_C_Gen_B.Text = data_value[4];
+
+                data = sr.ReadLine();
+                data_value = data.Split(',');
+                //lists = new List<string>();
+                txt_C_Inv_Low.Text = data_value[1];
+                txt_C_Inv_High.Text = data_value[2];
+                txt_C_Inv_A.Text = data_value[3];
+                txt_C_Inv_B.Text = data_value[4];
+
+                data = sr.ReadLine();
+                data_value = data.Split(',');
+                //lists = new List<string>();
+                txt_N_Low.Text = data_value[1];
+                txt_N_High.Text = data_value[2];
+                txt_N_A.Text = data_value[3];
+                txt_N_B.Text = data_value[4];
+
+                data = sr.ReadLine();
+                data_value = data.Split(',');
+                //lists = new List<string>();
+                txt_Com_WF_Low.Text = data_value[1];
+                txt_Com_WF_High.Text = data_value[2];
+                txt_Com_WF_A.Text = data_value[3];
+                txt_Com_WF_B.Text = data_value[4];
+
+                data = sr.ReadLine();
+                data_value = data.Split(',');
+                //lists = new List<string>();
+                txt_P_Value.Text = data_value[1];
+
+                data = sr.ReadLine();
+                data_value = data.Split(',');
+                //lists = new List<string>();
+                txt_T_Value.Text = data_value[1];
+
+                sr.Close();
+            }
+            else
+            {
+                Console.WriteLine("ファイルが存在しません");
+            }
+        }       
+    }
+}
